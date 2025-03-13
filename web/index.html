@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="A secure password manager application.">
+
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Z+ Password Manager">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  
+  <link rel="icon" type="image/x-icon" href="icons/favicon.ico" />
+
+  <title>Z+ Password Manager</title>
+  <link rel="manifest" href="manifest.json">
+
+  <script>
+    const serviceWorkerVersion = '{{flutter_service_worker_version}}';
+  </script>
+  <script src="flutter.js" defer></script>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #FFFFFF;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-color: #000000;
+      }
+    }
+
+    #splash-screen {
+      text-align: center;
+    }
+
+    #splash-image {
+      max-width: 200px;
+      max-height: 200px;
+    }
+
+    #loading-indicator {
+      margin-top: 20px;
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      animation: spin 2s linear infinite;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="splash-screen">
+    <img id="splash-image" src="icons/splash_logo_light.png" alt="Splash Logo Light">
+    <div id="loading-indicator"></div>
+  </div>
+  <script src="main.dart.js" type="application/javascript"></script>
+  <script>
+      function updateLogo() {
+        const splashImage = document.getElementById('splash-image');
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          splashImage.src = 'icons/splash_logo_dark.png';
+          splashImage.alt = 'Splash Logo Dark';
+        } else {
+          splashImage.src = 'icons/splash_logo_light.png';
+          splashImage.alt = 'Splash Logo Light';
+        }
+      }
+  
+      updateLogo();
+  
+      window.addEventListener('load', function () {
+        const splash = document.querySelector('#splash-screen');
+        splash.remove();
+      });
+
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', updateLogo);
+    </script>
+</body>
+
+</html>

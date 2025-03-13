@@ -1,0 +1,23 @@
+At Z+ Password Manager, we are committed to protecting the privacy of our users. This Privacy Policy explains how we collect, use, and disclose information when you use our app, Z+ Password Manager. By using our app, you agree to the terms of this Privacy Policy.
+
+Information Collection and Use
+
+When you use Z+ Password Manager, we collect and store the login credentials (usernames and passwords) that you enter into the app. This information is encrypted and stored in Google Firebase Firestore, a cloud-based database service provided by Google LLC. We use this information to provide you with the service of securely storing and managing your login credentials.
+
+Security
+
+We take reasonable measures to protect the information we collect from unauthorized access, use, or disclosure. However, no method of transmitting or storing electronic data is ever completely secure, and we cannot guarantee that such information will never be accessed, used, or disclosed in a manner that is inconsistent with this Privacy Policy.
+
+Data Retention
+
+We will retain the login credentials you provide to us for as long as you use the app and for a reasonable time thereafter. If you wish to delete your information, you can do so by deleting the app or by contacting us at the email provided in the contact section.
+
+Changes to this Privacy Policy
+
+We may update this Privacy Policy from time to time, but we will not notify you of any changes made. It is your responsibility to periodically review this privacy policy to stay informed of any updates. Your continued use of the app after any changes to this Privacy Policy will signify your acceptance of those changes.
+
+Contact
+
+If you have any questions about this Privacy Policy, please contact us at [email address].
+
+This privacy policy is effective as of the date of publication and will remain in effect except with respect to any changes in its provisions in the future, which will be in effect immediately after being posted on this page.
