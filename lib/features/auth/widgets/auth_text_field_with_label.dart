@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:zpluspasswordmanager/core/theme/app_theme.dart';
 
-enum AuthTextFieldWithLabelType {
+enum TextFieldWithLabelType {
   email,
   password,
   name,
@@ -10,27 +10,27 @@ enum AuthTextFieldWithLabelType {
   forgotEmail,
 }
 
-class AuthTextFieldWithLabel extends StatefulWidget {
-  const AuthTextFieldWithLabel({
+class TextFieldWithLabel extends StatefulWidget {
+  const TextFieldWithLabel({
     super.key,
     this.controller,
-    required this.authFieldType,
+    required this.fieldType,
     required this.onSaved,
     required this.validator,
     required this.submit,
   });
 
-  final AuthTextFieldWithLabelType authFieldType;
+  final TextFieldWithLabelType fieldType;
   final Function onSaved;
   final String? Function(String?)? validator;
   final Function? submit;
   final TextEditingController? controller;
 
   @override
-  State<AuthTextFieldWithLabel> createState() => _AuthTextFieldWithLabelState();
+  State<TextFieldWithLabel> createState() => _TextFieldWithLabelState();
 }
 
-class _AuthTextFieldWithLabelState extends State<AuthTextFieldWithLabel> {
+class _TextFieldWithLabelState extends State<TextFieldWithLabel> {
   // Define focus nodes for each field
   final FocusNode nameFocusNode = FocusNode();
   final FocusNode emailFocusNode = FocusNode();
@@ -49,16 +49,16 @@ class _AuthTextFieldWithLabelState extends State<AuthTextFieldWithLabel> {
     super.initState();
 
     // Assign the current and next focus nodes based on the authFieldType
-    switch (widget.authFieldType) {
-      case AuthTextFieldWithLabelType.name:
+    switch (widget.fieldType) {
+      case TextFieldWithLabelType.name:
         _currentFocusNode = nameFocusNode;
         _nextFocusNode = emailFocusNode;
         break;
-      case AuthTextFieldWithLabelType.email:
+      case TextFieldWithLabelType.email:
         _currentFocusNode = emailFocusNode;
         _nextFocusNode = passwordFocusNode;
         break;
-      case AuthTextFieldWithLabelType.password:
+      case TextFieldWithLabelType.password:
         _currentFocusNode = passwordFocusNode;
         _nextFocusNode = null; // No next focus node for the last field
         break;
@@ -95,13 +95,12 @@ class _AuthTextFieldWithLabelState extends State<AuthTextFieldWithLabel> {
           Padding(
             padding: EdgeInsets.only(left: 10.0.sp),
             child: Text(
-              widget.authFieldType == AuthTextFieldWithLabelType.email ||
-                      widget.authFieldType ==
-                          AuthTextFieldWithLabelType.forgotEmail
+              widget.fieldType == TextFieldWithLabelType.email ||
+                      widget.fieldType == TextFieldWithLabelType.forgotEmail
                   ? "EMAIL"
-                  : widget.authFieldType == AuthTextFieldWithLabelType.password
+                  : widget.fieldType == TextFieldWithLabelType.password
                       ? "PASSWORD"
-                      : widget.authFieldType == AuthTextFieldWithLabelType.name
+                      : widget.fieldType == TextFieldWithLabelType.name
                           ? "NAME"
                           : "PASSPHRASE",
               style: AppTheme().buttonTextStyle.copyWith(
@@ -122,36 +121,33 @@ class _AuthTextFieldWithLabelState extends State<AuthTextFieldWithLabel> {
               focusNode:
                   _currentFocusNode, // Assign the current field's FocusNode
               validator: widget.validator,
-              keyboardType: widget.authFieldType ==
-                          AuthTextFieldWithLabelType.email ||
-                      widget.authFieldType ==
-                          AuthTextFieldWithLabelType.forgotEmail
+              keyboardType: widget.fieldType == TextFieldWithLabelType.email ||
+                      widget.fieldType == TextFieldWithLabelType.forgotEmail
                   ? TextInputType.emailAddress
-                  : widget.authFieldType == AuthTextFieldWithLabelType.password
+                  : widget.fieldType == TextFieldWithLabelType.password
                       ? TextInputType.visiblePassword
                       : TextInputType.text,
               obscureText:
-                  widget.authFieldType == AuthTextFieldWithLabelType.password &&
+                  widget.fieldType == TextFieldWithLabelType.password &&
                       !_isPasswordVisible,
               decoration: InputDecoration(
-                suffixIcon:
-                    widget.authFieldType == AuthTextFieldWithLabelType.password
-                        ? IconButton(
-                            onPressed: () {
-                              setState(() {
-                                _isPasswordVisible = !_isPasswordVisible;
-                              });
-                            },
-                            icon: Icon(
-                              _isPasswordVisible
-                                  ? Icons.visibility
-                                  : Icons.visibility_off,
-                            ),
-                            color: _isFocused
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).colorScheme.secondary,
-                          )
-                        : null,
+                suffixIcon: widget.fieldType == TextFieldWithLabelType.password
+                    ? IconButton(
+                        onPressed: () {
+                          setState(() {
+                            _isPasswordVisible = !_isPasswordVisible;
+                          });
+                        },
+                        icon: Icon(
+                          _isPasswordVisible
+                              ? Icons.visibility
+                              : Icons.visibility_off,
+                        ),
+                        color: _isFocused
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.secondary,
+                      )
+                    : null,
                 fillColor: Theme.of(context).colorScheme.surfaceContainer,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10.sp),
@@ -174,18 +170,14 @@ class _AuthTextFieldWithLabelState extends State<AuthTextFieldWithLabel> {
                     width: 2.sp,
                   ),
                 ),
-                hintText:
-                    widget.authFieldType == AuthTextFieldWithLabelType.email ||
-                            widget.authFieldType ==
-                                AuthTextFieldWithLabelType.forgotEmail
-                        ? "Email"
-                        : widget.authFieldType ==
-                                AuthTextFieldWithLabelType.password
-                            ? "Password"
-                            : widget.authFieldType ==
-                                    AuthTextFieldWithLabelType.name
-                                ? "Name"
-                                : "Passphrase",
+                hintText: widget.fieldType == TextFieldWithLabelType.email ||
+                        widget.fieldType == TextFieldWithLabelType.forgotEmail
+                    ? "Email"
+                    : widget.fieldType == TextFieldWithLabelType.password
+                        ? "Password"
+                        : widget.fieldType == TextFieldWithLabelType.name
+                            ? "Name"
+                            : "Passphrase",
                 hintStyle: AppTheme().smallTextStyle.copyWith(
                       fontSize: 14.sp,
                       color: Theme.of(context).colorScheme.tertiary,

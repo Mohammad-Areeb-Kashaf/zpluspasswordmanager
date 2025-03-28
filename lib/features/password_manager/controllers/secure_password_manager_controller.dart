@@ -3,6 +3,8 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:encrypt/encrypt.dart'
+    as encrypt_lib; // To avoid conflict with pointycastle
 import 'package:encrypt/encrypt.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -11,36 +13,58 @@ import 'package:pointycastle/export.dart';
 import 'package:zpluspasswordmanager/core/controllers/loading_controller.dart';
 import 'package:zpluspasswordmanager/features/password_manager/models/password_model.dart';
 
-/// SecurePasswordManagerController handles all password management operations.
-/// It provides functionality for:
-/// - Storing passwords securely using encryption
-/// - Retrieving and decrypting stored passwords
-/// - Managing password categories and organization
-/// - Handling user authentication state
+class OldEncryption {
+  final key = encrypt_lib.Key.fromUtf8('12345678912345678912345678912345');
+  final iv = encrypt_lib.IV.fromLength(16);
+
+  String decryptPassword(String encryptedBase64) {
+    final encrypter = encrypt_lib.Encrypter(encrypt_lib.AES(key));
+    return encrypter.decrypt64(encryptedBase64, iv: iv);
+  }
+}
+
 class SecurePasswordManagerController extends GetxController {
   final _auth = FirebaseAuth.instance;
   final _firestore = FirebaseFirestore.instance;
   final _storage = const FlutterSecureStorage();
   final _loadingController = Get.find<LoadingController>();
+  final _oldEncryption = OldEncryption();
 
   final _passwords = <Password>[].obs;
   List<Password> get passwords => _passwords;
 
   final errorMessage = ''.obs;
   Key? derivedKey;
+  String? passphrase;
+  bool hasPassPhraseSet = false;
+  bool isMigrating = false;
 
   @override
-  void onInit() {
+  void onInit() async {
+    await initialize();
     super.onInit();
-    _initialize();
   }
 
-  Future<void> _initialize() async {
+  Future<void> initialize() async {
     await _loadingController.wrapLoading(() async {
-      await _retrieveDerivedKey();
-      final passphrase = await _retrievePassphrase();
-      if (_auth.currentUser != null && passphrase != null) {
-        await getAllPasswords(passphrase);
+      await passPhraseExistOrNotDeterminer();
+      if (hasPassPhraseSet) {
+        passphrase = await _retrievePassphrase();
+        if (passphrase != null) {
+          derivedKey = await _retrieveDerivedKey();
+          if (derivedKey == null) {
+            final salt = await getSalt(_auth.currentUser!.uid);
+            if (salt != null) {
+              derivedKey = await _deriveUserKey(passphrase!, salt);
+              await storeDerivedKey(derivedKey!);
+            }
+          }
+        }
+      } else {
+        derivedKey = null;
+      }
+      if (_auth.currentUser != null && passphrase != null && !isMigrating) {
+        await getAllPasswords(passphrase.toString());
       }
     });
   }
@@ -70,13 +94,74 @@ class SecurePasswordManagerController extends GetxController {
     }
   }
 
-  Future<void> onLoginSuccess(String passphrase) async {
-    await _storePassphrase(passphrase);
-    await getAllPasswords(passphrase);
+  Future<void> passPhraseExistOrNotDeterminer() async {
+    try {
+      final doc = await _firestore
+          .collection("user_data")
+          .doc(_auth.currentUser!.uid)
+          .get();
+
+      if (doc.exists && doc.data() != null) {
+        hasPassPhraseSet = doc.data()!['hasPassPhraseSet'] ?? false;
+      } else {
+        hasPassPhraseSet = false;
+        await passphraseSetter(); // Set the default value in Firestore
+      }
+    } catch (error) {
+      print("Error determining if passphrase exists: $error");
+      hasPassPhraseSet = false;
+    }
+  }
+
+  Future<void> passphraseSetter() async {
+    try {
+      await _firestore
+          .collection("user_data")
+          .doc(_auth.currentUser!.uid)
+          .set({'hasPassPhraseSet': hasPassPhraseSet}, SetOptions(merge: true));
+    } catch (e) {
+      print("Error setting passphrase in Firestore: $e");
+    }
+  }
+
+  Future<void> onRegisterSuccess(String passphraseInput) async {
+    try {
+      hasPassPhraseSet = true;
+      passphrase = passphraseInput;
+      await _storePassphrase(passphrase!);
+
+      final salt = generateSalt();
+      derivedKey = await _deriveUserKey(passphrase!, salt);
+      await storeDerivedKey(derivedKey!);
+      await saveSalt(_auth.currentUser!.uid, salt);
+
+      await passphraseSetter(); // Update Firestore with hasPassPhraseSet = true
+    } catch (e) {
+      print("Error during onRegisterSuccess: $e");
+    }
+  }
+
+  Future<void> onLoginSuccess(String passphraseInput) async {
+    try {
+      hasPassPhraseSet = true;
+      passphrase = passphraseInput;
+      await _storePassphrase(passphrase!);
+
+      final salt = await getSalt(_auth.currentUser!.uid) ?? generateSalt();
+      derivedKey = await _deriveUserKey(passphrase!, salt);
+      await storeDerivedKey(derivedKey!);
+
+      await passphraseSetter(); // Update Firestore with hasPassPhraseSet = true
+      await getAllPasswords(passphrase!);
+    } catch (e) {
+      print("Error during onLoginSuccess: $e");
+    }
   }
 
   Future<void> onLogout() async {
     await _removePassphrase();
+    await removeDerivedKey();
+    await _storage.deleteAll();
     _passwords.clear();
   }
 
@@ -362,5 +447,134 @@ class SecurePasswordManagerController extends GetxController {
       print('IV generation error: $e');
       return IV(Uint8List(16));
     }
+  }
+
+  Future<void> migrateOldData() async {
+    isMigrating = true;
+    _loadingController.startLoading();
+
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw Exception('User not authenticated');
+      }
+
+      final oldPasswordsSnapshot =
+          await _firestore.collection('${user.uid}pass').get();
+
+      if (oldPasswordsSnapshot.docs.isEmpty) {
+        Get.snackbar(
+          'No Old Data Found',
+          'No old password data was found to migrate.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
+        return;
+      }
+
+      final passphrase = await _retrievePassphrase();
+      if (passphrase == null) {
+        throw Exception('Passphrase not found');
+      }
+
+      final salt = await getSalt(user.uid) ?? generateSalt();
+      final userKey = await _deriveUserKey(passphrase, salt);
+
+      final newPasswords = <Password>[];
+
+      for (final doc in oldPasswordsSnapshot.docs) {
+        try {
+          final data = doc.data();
+          final passwordItem = data['password_item'] as Map<String, dynamic>?;
+
+          if (passwordItem != null) {
+            final encryptedLabel = passwordItem['label'] as String? ?? '';
+            final encryptedUsername = passwordItem['username'] as String? ?? '';
+            final encryptedCompany = passwordItem['company'] as String? ?? '';
+            final encryptedEmail = passwordItem['email'] as String? ?? '';
+            final encryptedPassword = passwordItem['password'] as String? ?? '';
+            final encryptedNote = passwordItem['note'] as String? ?? '';
+            final id = passwordItem['id'] as int? ??
+                DateTime.now().millisecondsSinceEpoch; // Generate a new ID
+
+            final decryptedLabel =
+                _oldEncryption.decryptPassword(encryptedLabel);
+            final decryptedUsername =
+                _oldEncryption.decryptPassword(encryptedUsername);
+            final decryptedCompany =
+                _oldEncryption.decryptPassword(encryptedCompany);
+            final decryptedEmail =
+                _oldEncryption.decryptPassword(encryptedEmail);
+            final decryptedPassword =
+                _oldEncryption.decryptPassword(encryptedPassword);
+            final decryptedNote = _oldEncryption.decryptPassword(encryptedNote);
+
+            final iv = generateRandomIV();
+            final encrypter = Encrypter(AES(userKey, mode: AESMode.gcm));
+            final newEncryptedPassword =
+                encrypter.encrypt(decryptedPassword, iv: iv);
+
+            newPasswords.add(Password(
+              id: id.toString(),
+              label: decryptedLabel,
+              username: decryptedUsername == 'null' ? '' : decryptedUsername,
+              website: decryptedCompany == 'null' ? '' : decryptedCompany,
+              email: decryptedEmail,
+              password: newEncryptedPassword.base64,
+              notes: decryptedNote == 'null' ? '' : decryptedNote,
+              iv: iv.base64,
+            ));
+          }
+        } catch (e) {
+          print('Error migrating password: $e');
+        }
+      }
+
+      if (newPasswords.isNotEmpty) {
+        final docRef = _firestore.collection('passwords').doc(user.uid);
+        final existingDoc = await docRef.get();
+
+        if (existingDoc.exists) {
+          final existingPasswordModel =
+              PasswordModel.fromJson(existingDoc.data()!);
+          existingPasswordModel.passwords.addAll(newPasswords);
+          await docRef.update(existingPasswordModel.toJson());
+        } else {
+          final newPasswordModel = PasswordModel(passwords: newPasswords);
+          await docRef.set(newPasswordModel.toJson());
+        }
+
+        // Optionally delete the old collection
+        await _deleteOldPasswordCollection(user.uid);
+        await getAllPasswords(passphrase);
+      }
+
+      Get.snackbar(
+        'Migration Complete',
+        'Your old passwords have been migrated to the new secure system.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      print('Error during migration: $e');
+      Get.snackbar(
+        'Migration Failed',
+        'An error occurred during migration. Please try again.',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } finally {
+      _loadingController.stopLoading();
+      isMigrating = false;
+    }
+  }
+
+  Future<void> _deleteOldPasswordCollection(String userUid) async {
+    final collectionRef = _firestore.collection('${userUid}pass');
+    final query = await collectionRef.get();
+    for (final doc in query.docs) {
+      await doc.reference.delete();
+    }
+    await _firestore
+        .collection('user_data')
+        .doc(userUid)
+        .update({'hasOldData': false});
   }
 }

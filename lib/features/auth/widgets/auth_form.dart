@@ -8,7 +8,11 @@ import 'package:zpluspasswordmanager/core/theme/app_theme.dart';
 import 'package:zpluspasswordmanager/features/auth/controllers/auth_controller.dart';
 import 'package:zpluspasswordmanager/features/auth/widgets/auth_text_field_with_label.dart';
 
-enum AuthFormType { login, register, forgotPassword }
+enum AuthFormType {
+  login,
+  register,
+  forgotPassword,
+}
 
 class AuthForm extends StatefulWidget {
   final AuthFormType authFormType;
@@ -18,8 +22,7 @@ class AuthForm extends StatefulWidget {
   State<AuthForm> createState() => _AuthFormState();
 }
 
-class _AuthFormState extends State<AuthForm>
-    with SingleTickerProviderStateMixin {
+class _AuthFormState extends State<AuthForm> {
   final _formKey = GlobalKey<FormState>();
   final AuthController _authController = Get.find<AuthController>();
   late bool isEmailSent;
@@ -50,81 +53,42 @@ class _AuthFormState extends State<AuthForm>
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Hero(
-                tag: "authTitle",
-                transitionOnUserGestures: true,
-                flightShuttleBuilder: (flightContext, animation,
-                    flightDirection, fromContext, toContext) {
-                  return SlideTransition(
-                    position: flightDirection == HeroFlightDirection.push
-                        ? Tween<Offset>(
-                            begin: const Offset(0, 1),
-                            end: const Offset(0, 0),
-                          ).animate(animation)
-                        : Tween<Offset>(
-                            begin: const Offset(0, 0),
-                            end: const Offset(0, 1),
-                          ).animate(animation),
-                    child: toContext.widget,
-                  );
-                },
-                child: AnimatedTextKit(
-                  animatedTexts: [
-                    TypewriterAnimatedText(
-                      widget.authFormType == AuthFormType.login
-                          ? 'LOGIN'
-                          : widget.authFormType == AuthFormType.register
-                              ? 'REGISTER'
-                              : 'FORGOT PASSWORD',
-                      textStyle: AppTheme().bigTitleStyle,
-                      speed: Duration(
-                          milliseconds:
-                              widget.authFormType != AuthFormType.forgotPassword
-                                  ? 400
-                                  : 200),
-                    ),
-                  ],
-                  totalRepeatCount: 1,
-                  isRepeatingAnimation: false,
-                ),
+              AnimatedTextKit(
+                animatedTexts: [
+                  TypewriterAnimatedText(
+                    widget.authFormType == AuthFormType.login
+                        ? 'LOGIN'
+                        : widget.authFormType == AuthFormType.register
+                            ? 'REGISTER'
+                            : 'FORGOT PASSWORD',
+                    textStyle: AppTheme().bigTitleStyle,
+                    speed: Duration(
+                        milliseconds:
+                            widget.authFormType != AuthFormType.forgotPassword
+                                ? 400
+                                : 200),
+                  ),
+                ],
+                totalRepeatCount: 1,
+                isRepeatingAnimation: false,
               ),
               isForgotPasswordEmailSubmitted
-                  ? Hero(
-                      tag: "authSubtitle",
-                      transitionOnUserGestures: true,
-                      flightShuttleBuilder: (flightContext, animation,
-                          flightDirection, fromContext, toContext) {
-                        return SlideTransition(
-                          position: flightDirection == HeroFlightDirection.push
-                              ? Tween<Offset>(
-                                  begin: const Offset(0, 1),
-                                  end: const Offset(0, 0),
-                                ).animate(animation)
-                              : Tween<Offset>(
-                                  begin: const Offset(0, 0),
-                                  end: const Offset(0, 1),
-                                ).animate(animation),
-                          child: toContext.widget,
-                        );
-                      },
-                      child: AnimatedTextKit(
-                        animatedTexts: [
-                          TypewriterAnimatedText(
-                            widget.authFormType == AuthFormType.login
-                                ? appStrings['login']!['phrase'].toString()
-                                : widget.authFormType == AuthFormType.register
-                                    ? appStrings['register']!['phrase']
-                                        .toString()
-                                    : appStrings['forgot_password']!['phrase']
-                                        .toString(),
-                            textStyle: AppTheme().smallTextStyle.copyWith(
-                                  color: Theme.of(context).colorScheme.tertiary,
-                                ),
-                          ),
-                        ],
-                        totalRepeatCount: 1,
-                        isRepeatingAnimation: false,
-                      ),
+                  ? AnimatedTextKit(
+                      animatedTexts: [
+                        TypewriterAnimatedText(
+                          widget.authFormType == AuthFormType.login
+                              ? appStrings['login']!['phrase'].toString()
+                              : widget.authFormType == AuthFormType.register
+                                  ? appStrings['register']!['phrase'].toString()
+                                  : appStrings['forgot_password']!['phrase']
+                                      .toString(),
+                          textStyle: AppTheme().smallTextStyle.copyWith(
+                                color: Theme.of(context).colorScheme.tertiary,
+                              ),
+                        ),
+                      ],
+                      totalRepeatCount: 1,
+                      isRepeatingAnimation: false,
                     )
                   : SizedBox.shrink(),
               Column(
@@ -134,8 +98,8 @@ class _AuthFormState extends State<AuthForm>
                       ? SizedBox(height: 50.sp)
                       : SizedBox(height: 30.sp),
                   widget.authFormType == AuthFormType.register
-                      ? AuthTextFieldWithLabel(
-                          authFieldType: AuthTextFieldWithLabelType.name,
+                      ? TextFieldWithLabel(
+                          fieldType: TextFieldWithLabelType.name,
                           onSaved: (value) {
                             name = value != null ? value.toString().trim() : "";
                           },
@@ -166,13 +130,12 @@ class _AuthFormState extends State<AuthForm>
                               child: toContext.widget,
                             );
                           },
-                          child: AuthTextFieldWithLabel(
+                          child: TextFieldWithLabel(
                             controller: widget.authFormType ==
                                     AuthFormType.forgotPassword
                                 ? forgotEmailController
                                 : TextEditingController(),
-                            authFieldType:
-                                AuthTextFieldWithLabelType.forgotEmail,
+                            fieldType: TextFieldWithLabelType.forgotEmail,
                             onSaved: (value) {
                               email =
                                   value != null ? value.toString().trim() : "";
@@ -205,8 +168,8 @@ class _AuthFormState extends State<AuthForm>
                               child: toContext.widget,
                             );
                           },
-                          child: AuthTextFieldWithLabel(
-                            authFieldType: AuthTextFieldWithLabelType.password,
+                          child: TextFieldWithLabel(
+                            fieldType: TextFieldWithLabelType.password,
                             onSaved: (value) {
                               password =
                                   value != null ? value.toString().trim() : "";
@@ -342,12 +305,16 @@ class _AuthFormState extends State<AuthForm>
                                 colorText: Colors.white,
                               );
                             } else if (_authController.isLoggedIn) {
-                              Get.offAllNamed(
-                                  AppRoutes.home); // Redirect to home
-                            }
-                            if (_authController.isLoggedIn) {
-                              Get.offAllNamed(
-                                  AppRoutes.home); // Redirect to home
+                              Get.offAllNamed(AppRoutes
+                                  .passPhrase); // Redirect to passPhrase
+                            } else {
+                              Get.snackbar(
+                                'Error',
+                                'Google sign-in failed',
+                                snackPosition: SnackPosition.BOTTOM,
+                                backgroundColor: Colors.red,
+                                colorText: Colors.white,
+                              );
                             }
                           },
                           child: Image.asset(
@@ -385,49 +352,29 @@ class _AuthFormState extends State<AuthForm>
                         });
                       }
                     },
-                    child: Hero(
-                      tag: 'authSwitch',
-                      transitionOnUserGestures: true,
-                      flightShuttleBuilder: (flightContext, animation,
-                          flightDirection, fromContext, toContext) {
-                        return SlideTransition(
-                          position: flightDirection == HeroFlightDirection.push
-                              ? Tween<Offset>(
-                                  begin: const Offset(0, 1),
-                                  end: const Offset(0, 0),
-                                ).animate(animation)
-                              : Tween<Offset>(
-                                  begin: const Offset(0, 0),
-                                  end: const Offset(0, 1),
-                                ).animate(animation),
-                          child: toContext.widget,
-                        );
-                      },
-                      child: RichText(
-                        textAlign: TextAlign.center,
-                        text: TextSpan(
-                          children: [
-                            TextSpan(
-                              text: widget.authFormType == AuthFormType.login
-                                  ? 'Don’t have an account yet?\n'
-                                  : 'Already have an account?\n',
-                              style: AppTheme().smallTextStyle.copyWith(
-                                    color:
-                                        Theme.of(context).colorScheme.onSurface,
-                                  ),
-                            ),
-                            TextSpan(
-                              text: widget.authFormType == AuthFormType.login
-                                  ? 'REGISTER'
-                                  : 'LOGIN',
-                              style: AppTheme().buttonTextStyle.copyWith(
-                                    fontSize: 14.sp,
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
-                                  ),
-                            ),
-                          ],
-                        ),
+                    child: RichText(
+                      textAlign: TextAlign.center,
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: widget.authFormType == AuthFormType.login
+                                ? 'Don’t have an account yet?\n'
+                                : 'Already have an account?\n',
+                            style: AppTheme().smallTextStyle.copyWith(
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
+                                ),
+                          ),
+                          TextSpan(
+                            text: widget.authFormType == AuthFormType.login
+                                ? 'REGISTER'
+                                : 'LOGIN',
+                            style: AppTheme().buttonTextStyle.copyWith(
+                                  fontSize: 14.sp,
+                                  color: Theme.of(context).colorScheme.primary,
+                                ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -545,8 +492,8 @@ class _AuthFormState extends State<AuthForm>
             password,
           );
           if (success) {
-            Get.offAllNamed(
-                AppRoutes.home); // Redirect to home on login success
+            Get.offAllNamed(AppRoutes
+                .passPhrase); // Redirect to Passphrase on login success
           }
           break;
 
@@ -557,8 +504,8 @@ class _AuthFormState extends State<AuthForm>
             password,
           );
           if (success) {
-            Get.offAllNamed(
-                AppRoutes.home); // Redirect to home on register success
+            Get.offAllNamed(AppRoutes
+                .passPhrase); // Redirect to Passphrase on register success
           }
           break;
 

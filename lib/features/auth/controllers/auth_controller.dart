@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:zpluspasswordmanager/core/controllers/loading_controller.dart';
+import 'package:zpluspasswordmanager/core/routes/app_routes.dart';
 import 'package:zpluspasswordmanager/features/auth/utils/auth_errors.dart';
 import 'package:zpluspasswordmanager/features/password_manager/controllers/secure_password_manager_controller.dart';
 
@@ -21,8 +22,6 @@ class AuthController extends GetxController {
           password: password,
         );
         errorMessage.value = '';
-        final controller = Get.find<SecurePasswordManagerController>();
-        controller.onLoginSuccess("I Love Allah");
         return true;
       } on FirebaseAuthException catch (e) {
         errorMessage.value = getAuthErrorMessage(e.code);
@@ -52,6 +51,7 @@ class AuthController extends GetxController {
         );
         await _auth.currentUser!.updateDisplayName(name);
         errorMessage.value = '';
+
         return true;
       } on FirebaseAuthException catch (e) {
         errorMessage.value = getAuthErrorMessage(e.code);
@@ -84,28 +84,38 @@ class AuthController extends GetxController {
     });
   }
 
-  Future googleSignIn() async {
-    // Implement Google Sign-In logic here
-    GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
-    GoogleSignInAuthentication? googleAuth = await googleUser?.authentication;
-    if (googleAuth != null) {
-      AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-      await _auth.signInWithCredential(credential);
-      // Handle errors and success
-      try {
+  Future<bool> googleSignIn() async {
+    return _loadingController.wrapLoading(() async {
+      // Implement Google Sign-In logic here
+      GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+      GoogleSignInAuthentication? googleAuth = await googleUser?.authentication;
+      if (googleAuth != null) {
+        AuthCredential credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
         await _auth.signInWithCredential(credential);
-        errorMessage.value = '';
-        return true;
-      } on FirebaseAuthException catch (e) {
-        errorMessage.value = getAuthErrorMessage(e.code);
-        return false;
-      } catch (e) {
-        errorMessage.value = 'An unexpected error occurred';
-        return false;
+        // Handle errors and success
+        try {
+          await _auth.signInWithCredential(credential);
+          errorMessage.value = '';
+          return true;
+        } on FirebaseAuthException catch (e) {
+          errorMessage.value = getAuthErrorMessage(e.code);
+          return false;
+        } catch (e) {
+          errorMessage.value = 'An unexpected error occurred';
+          return false;
+        }
       }
-    }
+      return false;
+    });
+  }
+
+  Future<void> signOut() async {
+    await _auth.signOut();
+    await GoogleSignIn().signOut();
+    Get.find<SecurePasswordManagerController>().onLogout();
+    Get.offAllNamed(AppRoutes.login);
   }
 }

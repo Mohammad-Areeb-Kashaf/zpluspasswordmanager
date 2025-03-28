@@ -1,25 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get/get.dart';
-import 'package:zpluspasswordmanager/core/widgets/loading_overlay.dart';
-import 'package:zpluspasswordmanager/features/auth/controllers/auth_controller.dart';
+import 'package:zpluspasswordmanager/core/widgets/loading_overlay_widget.dart';
 import 'package:zpluspasswordmanager/features/auth/widgets/auth_form.dart';
 
-class RegisterPage extends StatefulWidget {
+class RegisterPage extends StatelessWidget {
   const RegisterPage({super.key});
-
-  @override
-  State<RegisterPage> createState() => _RegisterPageState();
-}
-
-class _RegisterPageState extends State<RegisterPage> {
-  late final AuthController _authController;
-
-  @override
-  void initState() {
-    super.initState();
-    _authController = Get.find<AuthController>();
-  }
 
   @override
   Widget build(BuildContext context) {

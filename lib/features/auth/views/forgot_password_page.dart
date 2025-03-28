@@ -1,16 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get/get.dart';
-import 'package:zpluspasswordmanager/core/routes/app_routes.dart';
-import 'package:zpluspasswordmanager/core/widgets/loading_overlay.dart';
-import 'package:zpluspasswordmanager/features/auth/controllers/auth_controller.dart';
+import 'package:zpluspasswordmanager/core/widgets/loading_overlay_widget.dart';
 import 'package:zpluspasswordmanager/features/auth/widgets/auth_form.dart';
 
 class ForgotPasswordPage extends StatelessWidget {
-  final _emailController = TextEditingController();
-  final _authController = Get.find<AuthController>();
-
-  ForgotPasswordPage({super.key});
+  const ForgotPasswordPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -42,16 +36,5 @@ class ForgotPasswordPage extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Future<void> _handleResetPassword() async {
-    final success = await _authController.resetPassword(
-      _emailController.text.trim(),
-    );
-
-    if (success) {
-      _emailController.clear();
-      Get.offAllNamed(AppRoutes.login);
-    }
   }
 }

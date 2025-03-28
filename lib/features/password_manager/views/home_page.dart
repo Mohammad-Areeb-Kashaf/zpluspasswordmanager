@@ -1,8 +1,7 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:zpluspasswordmanager/core/routes/app_routes.dart';
-import 'package:zpluspasswordmanager/core/widgets/loading_overlay.dart';
+import 'package:zpluspasswordmanager/core/widgets/loading_overlay_widget.dart';
 import 'package:zpluspasswordmanager/features/auth/controllers/auth_controller.dart';
 import 'package:zpluspasswordmanager/features/password_manager/controllers/secure_password_manager_controller.dart';
 import 'package:zpluspasswordmanager/features/password_manager/models/password_model.dart';
@@ -16,7 +15,6 @@ import 'package:zpluspasswordmanager/features/password_manager/models/password_m
 class HomePage extends StatelessWidget {
   final _passwordController = Get.find<SecurePasswordManagerController>();
   final _authController = Get.find<AuthController>();
-  final _auth = FirebaseAuth.instance;
 
   HomePage({super.key});
 
@@ -69,7 +67,7 @@ class HomePage extends StatelessWidget {
 
           if (passwords.isEmpty) {
             return const Center(
-              child: Text('No passwords saved yet'),
+              child: Text('Basic Home Screen. yet to be developed'),
             );
           }
 
@@ -103,9 +101,7 @@ class HomePage extends StatelessWidget {
   }
 
   Future<void> _handleLogout() async {
-    await _auth.signOut();
-    _passwordController.onLogout();
-    Get.offAllNamed(AppRoutes.login);
+    await _authController.signOut();
   }
 
   Future<void> _handleDelete(Password password) async {

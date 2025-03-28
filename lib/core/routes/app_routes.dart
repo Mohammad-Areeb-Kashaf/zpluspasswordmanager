@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:zpluspasswordmanager/features/auth/controllers/auth_controller.dart';
 import 'package:zpluspasswordmanager/features/auth/views/forgot_password_page.dart';
 import 'package:zpluspasswordmanager/features/auth/views/login_page.dart';
-import 'package:zpluspasswordmanager/features/auth/views/pass_phrase_page.dart';
+import 'package:zpluspasswordmanager/features/auth/views/passphrase_page.dart';
 import 'package:zpluspasswordmanager/features/auth/views/register_page.dart';
 import 'package:zpluspasswordmanager/features/onboarding/views/onboarding_page.dart';
 import 'package:zpluspasswordmanager/features/password_manager/controllers/secure_password_manager_controller.dart';
@@ -66,22 +66,21 @@ class AppRoutes {
       preventDuplicates: true,
     ),
     GetPage(
-      name: passPhrase,
-      page: () => const PassPhrasePage(),
-      binding: BindingsBuilder(() {
-        Get.lazyPut(() => AuthController());
-      }),
-      middlewares: [AuthRedirectMiddleware()],
-      participatesInRootNavigator: true,
-      preventDuplicates: true,
-    ),
-    GetPage(
       name: home,
       page: () => HomePage(),
       binding: BindingsBuilder(() {
         Get.put(SecurePasswordManagerController());
       }),
       middlewares: [AuthGuardMiddleware()],
+      participatesInRootNavigator: true,
+      preventDuplicates: true,
+    ),
+    GetPage(
+      name: passPhrase,
+      page: () => const PassPhrasePage(),
+      binding: BindingsBuilder(() {
+        Get.lazyPut(() => SecurePasswordManagerController());
+      }),
       participatesInRootNavigator: true,
       preventDuplicates: true,
     ),
@@ -157,6 +156,8 @@ class AuthGuardMiddleware extends GetMiddleware {
   @override
   RouteSettings? redirect(String? route) {
     final authController = Get.find<AuthController>();
+    final securePasswordManagerController =
+        Get.find<SecurePasswordManagerController>();
 
     // If not logged in, redirect to login
     if (!authController.isLoggedIn) {
@@ -167,6 +168,20 @@ class AuthGuardMiddleware extends GetMiddleware {
         arguments: {'redirectTo': attemptedRoute},
       );
     }
+
+    // Exclude /passphrase from redirection to avoid infinite loop
+    if (route == AppRoutes.passPhrase) {
+      return null;
+    }
+
+    // If logged in but missing derivedKey or passphrase, redirect to Passphrase Page
+    final derivedKey = securePasswordManagerController.derivedKey;
+    final passphrase =
+        securePasswordManagerController.passphrase; // Use preloaded passphrase
+    if (derivedKey == null || passphrase == null) {
+      return const RouteSettings(name: AppRoutes.passPhrase);
+    }
+
     return null;
   }
 }
@@ -179,15 +194,34 @@ class AuthRedirectMiddleware extends GetMiddleware {
   @override
   RouteSettings? redirect(String? route) {
     final authController = Get.find<AuthController>();
+    final securePasswordManagerController =
+        Get.find<SecurePasswordManagerController>();
 
-    // If logged in and trying to access auth pages, redirect to home
-    if (authController.isLoggedIn &&
-        (route == AppRoutes.login ||
-            route == AppRoutes.register ||
-            route == AppRoutes.forgotPassword ||
-            route == AppRoutes.initial)) {
-      return const RouteSettings(name: AppRoutes.home);
+    // If logged in and trying to access auth pages
+    if (authController.isLoggedIn) {
+      final derivedKey = securePasswordManagerController.derivedKey;
+      final passphrase = securePasswordManagerController
+          .passphrase; // Use preloaded passphrase
+
+      // Exclude /passphrase from redirection to avoid infinite loop
+      if (route == AppRoutes.passPhrase) {
+        return null;
+      }
+
+      // Redirect to Passphrase Page if derivedKey or passphrase is missing
+      if (derivedKey == null || passphrase == null) {
+        return const RouteSettings(name: AppRoutes.passPhrase);
+      }
+
+      // Redirect to Home Page for other cases
+      if (route == AppRoutes.login ||
+          route == AppRoutes.register ||
+          route == AppRoutes.forgotPassword ||
+          route == AppRoutes.initial) {
+        return const RouteSettings(name: AppRoutes.home);
+      }
     }
+
     return null;
   }
 }

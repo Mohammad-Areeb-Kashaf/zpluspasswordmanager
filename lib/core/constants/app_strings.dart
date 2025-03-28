@@ -101,4 +101,10 @@ const Map<String, Map<String, String>> appStrings = {
     'phrase':
         'Don’t compromise your passwords by typing them in public, let Z+ Password Manager autofill those and keep your credentials secure.',
   },
+  'passphrase': {
+    'create_phrase':
+        'Remember this passphrase to unlock your saved passwords. Required once per device after login.',
+    'confirm_phrase':
+        'Enter your passphrase. This is required once per device after login.',
+  },
 };

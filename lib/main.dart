@@ -21,66 +21,52 @@ import 'package:zpluspasswordmanager/firebase_options.dart';
 /// - Screen orientation
 /// - State management
 /// - Web URL configuration
+
+String? initialRoute;
 void main() async {
-  // Ensure Flutter bindings are initialized
   WidgetsFlutterBinding.ensureInitialized();
 
   // Configure web-specific settings
   if (GetPlatform.isWeb) {
-    // Remove the leading hash (#) from web URLs
     setPathUrlStrategy();
   } else {
-    // Lock screen orientation for mobile devices
     await SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
       DeviceOrientation.portraitDown,
     ]);
   }
 
-  // Initialize Firebase with platform-specific options
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
-  // Initialize and activate App Check for security
-  // This helps prevent unauthorized access to Firebase services
   await FirebaseAppCheck.instance.activate(
     androidProvider: AndroidProvider.debug,
     appleProvider: AppleProvider.appAttest,
     webProvider: ReCaptchaV3Provider('YOUR_RECAPTCHA_V3_SITE_KEY'),
   );
 
-  // Ensure Google Sign-In is initialized (important for web)
   if (GetPlatform.isWeb) {
     GoogleSignIn(
       clientId: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
     );
   }
 
-  runApp(const MyApp());
+  Get.put(LoadingController());
+  Get.put(SecurePasswordManagerController());
+  Get.put(AuthController());
+
+  initialRoute = await authCheck();
+
+  runApp(MyApp());
 }
 
 /// The root widget of the application.
 /// Configures the app's theme, routing, and responsive design.
-class MyApp extends StatefulWidget {
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  @override
-  void initState() {
-    super.initState();
-    // Initialize controllers using GetX for state management
-    Get.put(LoadingController());
-    Get.put(SecurePasswordManagerController());
-    Get.put(AuthController());
-  }
 
   @override
   Widget build(BuildContext context) {
     return ScreenUtilInit(
-      // Use a consistent design size for better UI scaling
       designSize: const Size(375, 812),
       minTextAdapt: true,
       splitScreenMode: true,
@@ -90,17 +76,15 @@ class _MyAppState extends State<MyApp> {
         darkTheme: AppTheme.darkTheme(),
         themeMode: ThemeMode.light,
         debugShowCheckedModeBanner: false,
-        initialRoute: authCheck(),
+        initialRoute: initialRoute,
         getPages: AppRoutes.pages,
         defaultTransition: Transition.fade,
         transitionDuration: const Duration(milliseconds: 300),
         routingCallback: (routing) {
-          // Handle route changes, useful for analytics or deep linking
           if (routing?.current != null) {
             print('Current route: ${routing?.current}');
           }
         },
-        // Enable URL sync for web platform
         navigatorKey: Get.key,
         popGesture: GetPlatform.isIOS,
         builder: (context, widget) {
@@ -114,14 +98,5 @@ class _MyAppState extends State<MyApp> {
         },
       ),
     );
-  }
-
-  @override
-  dispose() {
-    // Dispose of controllers when the app is closed
-    Get.delete<LoadingController>();
-    Get.delete<SecurePasswordManagerController>();
-    Get.delete<AuthController>();
-    super.dispose();
   }
 }
